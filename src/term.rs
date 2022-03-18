@@ -73,7 +73,7 @@ impl Type {
     }
 }
 
-mod TypeConv {
+mod type_conv {
     use super::*;
 
     pub fn get_type(s: Sexpr) -> Option<Type> {
@@ -121,7 +121,7 @@ impl TryFrom<Sexpr> for Type {
     type Error = ();
 
     fn try_from(value: Sexpr) -> Result<Self, Self::Error> {
-        TypeConv::get_type(value).ok_or(())
+        type_conv::get_type(value).ok_or(())
     }
 }
 
@@ -188,7 +188,7 @@ impl Term {
     }
 }
 
-mod TermConv {
+mod term_conv {
     use super::*;
 
     pub fn get_term(s: Sexpr) -> Option<Term> {
@@ -231,7 +231,7 @@ mod TermConv {
         match &l[..] {
             [Sexpr::Sym(sym), term, ty] if sym == "inst" => {
                 let term = get_term(term.clone())?;
-                let ty = TypeConv::get_type(ty.clone())?;
+                let ty = type_conv::get_type(ty.clone())?;
                 Some(Term::TApp(term.into(), ty.into()))
             }
             _ => None,
@@ -250,7 +250,7 @@ mod TermConv {
         let l = s.get_list_opt()?;
         let mut buff = Buff::new(l);
         let var = buff.expect_convert(Sexpr::get_symb_opt)?;
-        let ty = buff.expect_convert(TypeConv::get_type)?;
+        let ty = buff.expect_convert(type_conv::get_type)?;
         buff.expect_end()?;
         Some((var, ty))
     }
@@ -267,12 +267,12 @@ impl TryFrom<Sexpr> for Term {
     type Error = ();
 
     fn try_from(value: Sexpr) -> Result<Self, Self::Error> {
-        TermConv::get_term(value).ok_or(())
+        term_conv::get_term(value).ok_or(())
     }
 }
 
 #[cfg(test)]
-mod Test {
+mod test {
     use super::*;
 
     #[test]
