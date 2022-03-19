@@ -2,7 +2,7 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{buff::Buff, sexpr::Sexpr};
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, Hash, PartialEq, Eq)]
 pub enum Type {
     Var(String),
     All(String, Box<Type>),
@@ -10,7 +10,7 @@ pub enum Type {
 }
 
 impl Type {
-    fn closed_aux(&self, env: &HashSet<String>) -> bool {
+    pub fn closed_aux(&self, env: &HashSet<String>) -> bool {
         match self {
             Type::Var(x) => env.contains(x),
             Type::All(x, t) => {
@@ -69,6 +69,34 @@ impl Type {
                 }
             }
             Type::Fun(tl, tr) => Type::Fun(tl.subst(x, t.clone()).into(), tr.subst(x, t).into()),
+        }
+    }
+
+    pub fn reduce(&self, bindings: &HashSet<String>, env: &HashMap<String, Self>) -> Self {
+        match self {
+            Type::Var(x) => {
+                println!("debug: {:?}", x);
+                if bindings.contains(x) {
+                    println!("Bounded!");
+                    self.clone()
+                } else {
+                    println!("Unbounded!");
+                    if let Some(t) = env.get(x) {
+                        t.clone()
+                    } else {
+                        self.clone()
+                    }
+                }
+            }
+            Type::All(x, t) => {
+                let mut bindings = bindings.clone();
+                bindings.insert(x.clone());
+                Type::All(x.clone(), t.reduce(&bindings, env).into())
+            }
+            Type::Fun(t1, t2) => Type::Fun(
+                t1.reduce(bindings, env).into(),
+                t2.reduce(bindings, env).into(),
+            ),
         }
     }
 }
@@ -140,6 +168,30 @@ pub enum Term {
 }
 
 impl Term {
+    pub fn expand_types(&self, bindings: &HashSet<String>, alias: &HashMap<String, Type>) -> Self {
+        match self {
+            Term::TLam(x, e) => {
+                let mut bindings = bindings.clone();
+                bindings.insert(x.clone());
+                Term::TLam(x.clone(), e.expand_types(&bindings, alias).into())
+            }
+            Term::Lam(x, tx, e) => Term::Lam(
+                x.clone(),
+                tx.reduce(bindings, alias),
+                e.expand_types(bindings, alias).into(),
+            ),
+            Term::App(e1, e2) => Term::App(
+                e1.expand_types(bindings, alias).into(),
+                e2.expand_types(bindings, alias).into(),
+            ),
+            Term::TApp(e, t) => Term::TApp(
+                e.expand_types(bindings, alias).into(),
+                t.reduce(bindings, alias),
+            ),
+            Term::Var(_) => self.clone(),
+        }
+    }
+
     pub fn typed_aux(&self, tenv: &HashSet<String>, env: &HashMap<String, Type>) -> Option<Type> {
         match self {
             Term::TLam(a, e) => {

@@ -79,7 +79,7 @@ impl Sexpr {
         }
     }
 
-    fn parse_list(buff: &mut Buff<char>) -> Option<Vec<Self>> {
+    pub fn parse_list(buff: &mut Buff<char>) -> Option<Vec<Self>> {
         buff.expect_list(Self::parse)
     }
 
