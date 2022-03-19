@@ -1,0 +1,9 @@
+(Def ID
+  (all (A) (A A))
+)
+
+(Let f
+  (tlam (ID) (lam ((x ID)) x))
+)
+
+(Check f)

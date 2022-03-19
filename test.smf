@@ -1,4 +1,17 @@
-(lam
-  ((x (all (A) (A A))))
-  x
+(Def ID
+  (all (A) (A A))
 )
+
+(Let f
+  (lam ((x ID)) x)
+)
+
+(Check f)
+
+(Let g
+  (lam ((x ID) (f ID))
+    ((inst f ID) x)
+  )
+)
+
+(Check g)
