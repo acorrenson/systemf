@@ -5,5 +5,12 @@
 (Let f
   (tlam (ID) (lam ((x ID)) x))
 )
-
 (Check f)
+
+
+(Let g
+  (tlam (T) (lam ((x T)) x))
+)
+(Check g)
+(Check (inst g ID))
+(Eval (inst g ID))

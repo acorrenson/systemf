@@ -115,7 +115,14 @@ impl Command {
                     println!("Type check failed");
                 }
             }
-            Command::Eval(_) => todo!(),
+            Command::Eval(e) => {
+                if let Some(v) = e.reduce(&env.bindings) {
+                    println!("Evaluation succeeded");
+                    println!("_ := {:?}", v)
+                } else {
+                    println!("Evaluation failed");
+                }
+            }
             Command::Context => {
                 println!("{:?}", env.types);
                 println!("{:?}", env.bindings);

@@ -72,16 +72,13 @@ impl Type {
         }
     }
 
-    pub fn reduce(&self, bindings: &HashSet<String>, env: &HashMap<String, Self>) -> Self {
+    pub fn reduce(&self, bindings: &HashSet<String>, aliases: &HashMap<String, Self>) -> Self {
         match self {
             Type::Var(x) => {
-                println!("debug: {:?}", x);
                 if bindings.contains(x) {
-                    println!("Bounded!");
                     self.clone()
                 } else {
-                    println!("Unbounded!");
-                    if let Some(t) = env.get(x) {
+                    if let Some(t) = aliases.get(x) {
                         t.clone()
                     } else {
                         self.clone()
@@ -91,11 +88,11 @@ impl Type {
             Type::All(x, t) => {
                 let mut bindings = bindings.clone();
                 bindings.insert(x.clone());
-                Type::All(x.clone(), t.reduce(&bindings, env).into())
+                Type::All(x.clone(), t.reduce(&bindings, aliases).into())
             }
             Type::Fun(t1, t2) => Type::Fun(
-                t1.reduce(bindings, env).into(),
-                t2.reduce(bindings, env).into(),
+                t1.reduce(bindings, aliases).into(),
+                t2.reduce(bindings, aliases).into(),
             ),
         }
     }
@@ -237,6 +234,29 @@ impl Term {
         let tenv = HashSet::from([]);
         let env = HashMap::from([]);
         self.typed_aux(&tenv, &env)
+    }
+
+    pub fn reduce(&self, env: &HashMap<String, Term>) -> Option<Self> {
+        match self {
+            Term::App(e1, e2) => match e1.reduce(env) {
+                Some(Term::Lam(x, _, e)) => {
+                    let v2 = e2.reduce(env)?;
+                    let mut env = env.clone();
+                    env.insert(x, v2);
+                    e.reduce(&env)
+                }
+                _ => None,
+            },
+            Term::TApp(e, t) => match e.reduce(env) {
+                Some(Term::TLam(x, e)) => {
+                    let e = e.expand_types(&HashSet::from([]), &HashMap::from([(x, t.clone())]));
+                    e.reduce(env)
+                }
+                _ => None,
+            },
+            Term::Var(x) => env.get(x).cloned(),
+            _ => Some(self.clone()),
+        }
     }
 }
 
